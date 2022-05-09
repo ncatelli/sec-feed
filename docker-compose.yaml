@@ -7,21 +7,20 @@ services:
     ports:
       - 8080:80
     healthcheck:
-      test: 'CMD curl --fail http://localhost/sample-feed.xml || exit 1'
+      test: 'curl --fail http://127.0.0.1/feed.xml || exit 1'
       interval: 10s
       retries: 3
   checker:
     build: .
-    command: bash -c "rm -f tmp/pids/server.pid && bundle exec rails s -p 3000 -b '0.0.0.0'"
     volumes:
       - ./dev/conf:/opt/sec-feed/conf:ro
       - cache:/opt/sec-feed/.sec-feed/cache
     environment:
-      - 'SEC_FEED_URL=http://web/sample-feed.xml'
+      - 'SEC_FEED_URL=http://web/feed.xml'
       - 'SEC_FEED_FILTER_PATH=/opt/sec-feed/conf/'
       - 'SEC_FEED_CACHE_PATH=/opt/sec-feed/.sec-feed/cache/'
     depends_on:
       web:
-        condition: service_started
+        condition: service_healthy
 volumes:
   cache:
