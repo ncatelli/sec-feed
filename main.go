@@ -88,7 +88,7 @@ func main() {
 	help := flag.Bool("help", false, "print help information")
 	flag.StringVar(&feedUrl, "url", getEnvOr("SEC_FEED_URL", defaultRssFeedSource), "the url source feed")
 	flag.StringVar(&confPath, "filter-path", getEnvOr("SEC_FEED_FILTER_PATH", "conf"), "the directory path to source filters from")
-	flag.StringVar(&cachePath, "cache-path", getEnvOr("SEC_FEED_CACHE_PATH", ".sec-feed/cache"), "the directory path to store all cache files")
+	flag.StringVar(&cachePath, "cache-path", getEnvOr("SEC_FEED_CACHE_PATH", ".sec-feed/"), "the directory path to store all cache files")
 	flag.StringVar(&formatOutput, "format", getEnvOr("SEC_FEED_OUTPUT_FORMAT", defaultOutputFormatting), "a formatting string for the resulting output data")
 	flag.Parse()
 
@@ -109,7 +109,9 @@ func main() {
 
 	var newItems []*rss.Item
 
-	feed, err := loadCachedFeed(cacheFile)
+	absoluteCacheFilePath := filepath.Join(cachePath, cacheFile)
+
+	feed, err := loadCachedFeed(absoluteCacheFilePath)
 	if !errors.Is(err, os.ErrNotExist) {
 		err := feed.Update()
 		if err != nil {
@@ -130,8 +132,8 @@ func main() {
 		// no new items are append on a new url.
 	}
 
-	if cacheFeed(cacheFile, feed) != nil {
-		log.Fatalf("failed to cache: %s\n", cacheFile)
+	if err = cacheFeed(absoluteCacheFilePath, feed); err != nil {
+		log.Fatalf("failed to cache %s: %s\n", absoluteCacheFilePath, err)
 	}
 
 	// setup template
