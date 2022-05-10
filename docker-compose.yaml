@@ -14,7 +14,7 @@ services:
     build: .
     volumes:
       - ./dev/conf:/opt/sec-feed/conf:ro
-      - ./dev/cache/:/opt/sec-feed/.sec-feed
+      - cache:/opt/sec-feed/.sec-feed/cache
       - ./sec-feed:/opt/sec-feed/bin/sec-feed
     environment:
       - 'SEC_FEED_URL=http://web/feed.xml'
@@ -23,3 +23,5 @@ services:
     depends_on:
       web:
         condition: service_healthy
+volumes:
+  cache:
