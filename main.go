@@ -16,16 +16,16 @@ import (
 )
 
 const (
-	cacheFile string = "cache.json"
+	cacheFile            string = "cache.json"
+	defaultRssFeedSource string = "https://nvd.nist.gov/feeds/xml/cve/misc/nvd-rss-analyzed.xml"
 
 	defaultOutputFormatting string = `----
 {{ .Title }}
 {{ .Date }}
-{{ .Description }}
+{{ .Summary }}
 {{ .Link }}
 ----
 `
-	defaultRssFeedSource string = "https://nvd.nist.gov/feeds/xml/cve/misc/nvd-rss-analyzed.xml"
 )
 
 var (
