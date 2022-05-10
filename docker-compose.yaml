@@ -1,0 +1,27 @@
+version: "3.9"
+services:
+  web:
+    image: nginx
+    volumes:
+      - ./dev/nginx/www:/usr/share/nginx/html:ro
+    ports:
+      - 8080:80
+    healthcheck:
+      test: 'curl --fail http://127.0.0.1/feed.xml || exit 1'
+      interval: 10s
+      retries: 3
+  checker:
+    build: .
+    volumes:
+      - ./dev/conf:/opt/sec-feed/conf:ro
+      - cache:/opt/sec-feed/.sec-feed/cache
+      - ./sec-feed:/opt/sec-feed/bin/sec-feed
+    environment:
+      - 'SEC_FEED_URL=http://web/feed.xml'
+      - 'SEC_FEED_FILTER_PATH=/opt/sec-feed/conf/'
+      - 'SEC_FEED_CACHE_PATH=/opt/sec-feed/.sec-feed/cache/'
+    depends_on:
+      web:
+        condition: service_healthy
+volumes:
+  cache:
