@@ -78,7 +78,7 @@ func cacheFeed(cachePath string, feed *rss.Feed) error {
 	return nil
 }
 
-func fetch_feed(feedUrl, absoluteCacheFilePath string) (*rss.Feed, bool, error) {
+func fetch_feed(feedUrl, absoluteCacheFilePath string, ignoreUpdate bool) (*rss.Feed, bool, error) {
 	req, err := url.Parse(feedUrl)
 	if err != nil {
 		log.Fatal(err)
@@ -90,7 +90,9 @@ func fetch_feed(feedUrl, absoluteCacheFilePath string) (*rss.Feed, bool, error) 
 	// update the feed from cache
 	if !errors.Is(err, os.ErrNotExist) {
 		err := feed.Update()
-		if err != nil {
+		if err != nil && feed != nil && ignoreUpdate {
+			return feed, true, nil
+		} else if err != nil {
 			return nil, cached, err
 		}
 
@@ -105,7 +107,7 @@ func fetch_feed(feedUrl, absoluteCacheFilePath string) (*rss.Feed, bool, error) 
 		cached = false
 	}
 
-	return feed, cached, err
+	return feed, cached, nil
 }
 
 func printHelp() {
@@ -155,6 +157,38 @@ func cmdNewItems(feed *rss.Feed, cacheFilePath string, filters map[string]string
 	return nil
 }
 
+func cmdAll(feed *rss.Feed, cacheFilePath string, filters map[string]string) error {
+
+	if err := cacheFeed(cacheFilePath, feed); err != nil {
+		return fmt.Errorf("failed to cache %s: %s", cacheFilePath, err)
+	}
+
+	// setup template
+	outputTemplate, err := template.New("output").Parse(formatOutput)
+	if err != nil {
+		return err
+	}
+
+	var itemsMatchingFilters []*rss.Item
+	for _, item := range feed.Items {
+		for _, filter := range filters {
+			if strings.Contains(item.Title, filter) {
+				itemsMatchingFilters = append(itemsMatchingFilters, item)
+				break
+			}
+		}
+	}
+
+	for _, item := range itemsMatchingFilters {
+		err = outputTemplate.Execute(os.Stdout, item)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 func main() {
 	help := flag.Bool("help", false, "print help information")
 	flag.StringVar(&feedUrl, "url", getEnvOr("SEC_FEED_URL", defaultRssFeedSource), "the url source feed")
@@ -177,11 +211,23 @@ func main() {
 	cmd := flag.Arg(0)
 	switch cmd {
 	case "new":
-		feed, cached, err := fetch_feed(feedUrl, absoluteCacheFilePath)
+		feed, cached, err := fetch_feed(feedUrl, absoluteCacheFilePath, false)
 		if err != nil {
 			log.Fatal(err)
 		}
 		cmdNewItems(feed, absoluteCacheFilePath, filters, cached)
+		if err != nil {
+			log.Fatal(err)
+		}
+	case "all":
+		feed, _, err := fetch_feed(feedUrl, absoluteCacheFilePath, true)
+		if err != nil {
+			log.Fatal(err)
+		}
+		cmdAll(feed, absoluteCacheFilePath, filters)
+		if err != nil {
+			log.Fatal(err)
+		}
 
 	case "":
 		log.Fatal("command not specified")
