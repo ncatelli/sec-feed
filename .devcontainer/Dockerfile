@@ -4,13 +4,19 @@
 ARG VARIANT="1.18-bullseye"
 FROM mcr.microsoft.com/vscode/devcontainers/go:0-${VARIANT}
 
+ENV HUGO_VERSION="0.98.0"
+
 # [Choice] Node.js version: none, lts/*, 16, 14, 12, 10
 ARG NODE_VERSION="none"
 RUN if [ "${NODE_VERSION}" != "none" ]; then su vscode -c "umask 0002 && . /usr/local/share/nvm/nvm.sh && nvm install ${NODE_VERSION} 2>&1"; fi
 
 # [Optional] Uncomment this section to install additional OS packages.
-# RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
-#     && apt-get -y install --no-install-recommends <your-package-list-here>
+RUN curl -L -o /tmp/hugo.deb https://github.com/gohugoio/hugo/releases/download/v${HUGO_VERSION}/hugo_${HUGO_VERSION}_Linux-64bit.deb \
+	&& apt-get update && export DEBIAN_FRONTEND=noninteractive \
+	&& dpkg -i /tmp/hugo.deb \
+	&& apt-get install -f \
+	&& apt-get clean && rm -rf /var/lib/apt/lists/ \
+	&& rm -f /tmp/hugo.deb
 
 # [Optional] Uncomment the next lines to use go get to install anything else you need
 # USER vscode
