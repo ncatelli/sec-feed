@@ -158,7 +158,6 @@ func cmdNewItems(feed *rss.Feed, cacheFilePath string, filters map[string]string
 }
 
 func cmdAll(feed *rss.Feed, cacheFilePath string, filters map[string]string) error {
-
 	if err := cacheFeed(cacheFilePath, feed); err != nil {
 		return fmt.Errorf("failed to cache %s: %s", cacheFilePath, err)
 	}
