@@ -5,12 +5,12 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"html/template"
 	"log"
 	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
-	"text/template"
 	"time"
 
 	"github.com/SlyMarbo/rss"
@@ -29,10 +29,15 @@ const (
 `
 
 	defaultGeneratedSiteFormatting string = `---
-{{ .PageMeta | toYaml }}
+title: {{ .Meta.Title  }}
+date: {{ .Meta.Date  }}
+cve: {{ .Meta.Link  }}
+tags: {{ range .Meta.Tags }}
+  - {{. | js}}{{end}}
+draft: false
 ---
 
-<a href="{{ .Link }}">{{ .Link }}</a>
+<a href="{{ .Meta.Link }}">{{ .Meta.Link }}</a>
 	
 {{ .Summary }}
 `
@@ -253,7 +258,15 @@ func cmdGenerate(feed *rss.Feed, cacheFilePath string, siteFilePath string, filt
 			Summary: item.Summary,
 		}
 
-		err = outputTemplate.Execute(os.Stdout, data)
+		lowerCve := filepath.Clean(strings.ToLower(meta.Title))
+		fileName := filepath.Join(siteFilePath, "/content/cve/", (lowerCve + ".md"))
+		f, err := os.OpenFile(fileName, os.O_CREATE|os.O_WRONLY, 0644)
+		if err != nil {
+			return err
+		}
+
+		err = outputTemplate.Execute(f, data)
+		f.Close()
 		if err != nil {
 			return err
 		}
