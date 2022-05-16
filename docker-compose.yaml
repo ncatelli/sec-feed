@@ -16,6 +16,7 @@ services:
       - ./dev/conf:/opt/sec-feed/conf:ro
       - cache:/opt/sec-feed/.sec-feed/cache
       - ./sec-feed:/opt/sec-feed/bin/sec-feed
+      - ./site:/opt/sec-feed/site
     environment:
       - 'SEC_FEED_URL=http://web/feed.xml'
       - 'SEC_FEED_FILTER_PATH=/opt/sec-feed/conf/'
