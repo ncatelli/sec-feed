@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"strings"
 	"text/template"
+	"time"
 
 	"github.com/SlyMarbo/rss"
 )
@@ -26,12 +27,22 @@ const (
 {{ .Link }}
 ----
 `
+
+	defaultGeneratedSiteFormatting string = `---
+{{ .PageMeta | toYaml }}
+---
+
+<a href="{{ .Link }}">{{ .Link }}</a>
+	
+{{ .Summary }}
+`
 )
 
 var (
 	feedUrl      string
 	confPath     string
 	cachePath    string
+	sitePath     string
 	formatOutput string
 )
 
@@ -188,11 +199,75 @@ func cmdAll(feed *rss.Feed, cacheFilePath string, filters map[string]string) err
 	return nil
 }
 
+// Item represents a single story.
+type PageMeta struct {
+	Title string    `json:"title" yaml:"title"`
+	Link  string    `json:"link" yaml:"link"`
+	Date  time.Time `json:"date" yaml:"date"`
+	Tags  []string  `json:"tags" yaml:"tags"`
+}
+
+type PageData struct {
+	Meta    PageMeta `json:"title" yaml:"meta"`
+	Summary string   `json:"summary" yaml:"summary"`
+}
+
+func cmdGenerate(feed *rss.Feed, cacheFilePath string, siteFilePath string, filters map[string]string) error {
+	if err := cacheFeed(cacheFilePath, feed); err != nil {
+		return fmt.Errorf("failed to cache %s: %s", cacheFilePath, err)
+	}
+
+	// setup template
+	outputTemplate, err := template.New("hugo").Parse(defaultGeneratedSiteFormatting)
+	if err != nil {
+		return err
+	}
+
+	var itemsMatchingFilters []*rss.Item
+	for _, item := range feed.Items {
+		for _, filter := range filters {
+			if strings.Contains(item.Title, filter) {
+				itemsMatchingFilters = append(itemsMatchingFilters, item)
+				break
+			}
+		}
+	}
+
+	for _, item := range itemsMatchingFilters {
+		tmp := strings.Split(item.Title, "(")
+		tmpTags := strings.Trim(tmp[1], "()")
+		tmpTags = strings.TrimSpace(tmpTags)
+		tags := strings.Split(tmpTags, ", ")
+
+		title := strings.TrimSpace(tmp[0])
+
+		meta := PageMeta{
+			Title: title,
+			Link:  item.Link,
+			Date:  item.Date,
+			Tags:  tags,
+		}
+
+		data := PageData{
+			Meta:    meta,
+			Summary: item.Summary,
+		}
+
+		err = outputTemplate.Execute(os.Stdout, data)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 func main() {
 	help := flag.Bool("help", false, "print help information")
 	flag.StringVar(&feedUrl, "url", getEnvOr("SEC_FEED_URL", defaultRssFeedSource), "the url source feed")
 	flag.StringVar(&confPath, "filter-path", getEnvOr("SEC_FEED_FILTER_PATH", "conf"), "the directory path to source filters from")
-	flag.StringVar(&cachePath, "cache-path", getEnvOr("SEC_FEED_CACHE_PATH", ".sec-feed/"), "the directory path to store all cache files")
+	flag.StringVar(&cachePath, "cache-path", getEnvOr("SEC_FEED_CACHE_PATH", ".sec-feed"), "the directory path to store all cache files")
+	flag.StringVar(&sitePath, "site-path", getEnvOr("SEC_FEED_SITE_PATH", "site"), "the directory path to the hugo root.")
 	flag.StringVar(&formatOutput, "format", getEnvOr("SEC_FEED_OUTPUT_FORMAT", defaultOutputFormatting), "a formatting string for the resulting output data")
 	flag.Parse()
 
@@ -214,7 +289,8 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
-		cmdNewItems(feed, absoluteCacheFilePath, filters, cached)
+
+		err = cmdNewItems(feed, absoluteCacheFilePath, filters, cached)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -223,7 +299,18 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
-		cmdAll(feed, absoluteCacheFilePath, filters)
+
+		err = cmdAll(feed, absoluteCacheFilePath, filters)
+		if err != nil {
+			log.Fatal(err)
+		}
+	case "generate":
+		feed, _, err := fetch_feed(feedUrl, absoluteCacheFilePath, true)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		err = cmdGenerate(feed, absoluteCacheFilePath, filepath.Clean(sitePath), filters)
 		if err != nil {
 			log.Fatal(err)
 		}
