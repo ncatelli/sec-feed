@@ -17,4 +17,5 @@ sec-feed
 
 # Hugo
 .hugo_build.lock
+site/content/cve
 site/public
