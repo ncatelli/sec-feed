@@ -1,13 +1,13 @@
 <div class="item">
 
     {{ $.Scratch.Set "link" .RelPermalink }}
+    {{ with .Params.link }} {{ $.Scratch.Set "link" . }} {{ end }}
+
     {{ .Date.Format (.Site.Params.dateFormat | default "January 2, 2006") | $.Scratch.Set "subheader" }}
     {{ with .Description }} {{ $.Scratch.Set "subheader" . }} {{ end }}
-    {{ with .Params.cve }} {{ $.Scratch.Set "cve" . }} {{ end }}
 
-    <h4><a href="{{ .Scratch.Get " link" }}">{{ .Title }}</a></h4>
+    <h4><a href="{{ .Scratch.Get "link" }}">{{ .Title }}</a></h4>
     <h5>{{ $.Scratch.Get "subheader" }}</h5>
-    <h5><a href="{{ .Scratch.Get " cve" }}">{{ $.Scratch.Get "cve" }}</a></h5>
     {{ partial "tags" . }}
 
 </div>

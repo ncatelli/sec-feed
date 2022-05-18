@@ -5,12 +5,12 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"html/template"
 	"log"
 	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
+	"text/template"
 	"time"
 
 	"github.com/SlyMarbo/rss"
