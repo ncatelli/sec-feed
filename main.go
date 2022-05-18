@@ -128,7 +128,11 @@ func fetch_feed(feedUrl, absoluteCacheFilePath string, ignoreUpdate bool) (*rss.
 
 func printHelp() {
 	fmt.Println("Usage: sec-feed [OPTIONS]...")
-	fmt.Printf("A cli checker utility for generating vulnerabilty feeds.\n\n")
+	fmt.Printf("A cli checker utility for generating vulnerabilty feeds.\n")
+	fmt.Printf("commands:\n")
+	fmt.Printf("  new\n  all\n  generate\n")
+	fmt.Printf("flags:\n")
+
 	flag.PrintDefaults()
 }
 
